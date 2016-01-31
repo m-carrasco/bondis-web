@@ -1,0 +1,197 @@
+<form id="formBuscarRecorridos" class="form-horizontal formBuscarBondis" action="/movimiento/buscar" method="post">
+    <fieldset>
+        <!-- Select Basic -->
+        <div class="form-group">
+          <legend> Selección </legend>
+          <label class="col-md-4 control-label" for="selectbasic">Línea</label>
+          <div class="col-md-4">
+            <select id="selectLinea" name="selectLinea" class="form-control">
+              <option value="219">37</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Select Basic -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="selectbasic">Tramo</label>
+          <div class="col-md-4">
+            <select id="selectRecorrido" name="selectRecorrido" class="form-control">
+              <option value="Cabecera Palermo">Cabecera Palermo</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Button -->
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="singlebutton"></label>
+          <div class="col-md-4">
+            <button type="submit" id="buttonBuscar" name="buttonBuscar" class="btn btn-primary">Buscar</button>
+          </div>
+        </div>
+    </fieldset>
+</form>
+
+
+<form id="formMandarRecorridos" class="form-horizontal" action="/movimiento/mapa" method="post">
+    <fieldset>
+        <!-- Select Basic -->
+        <div class="form-group">
+          <legend> Movimientos </legend>
+          <!-- <div class="col-md-4">
+            <select id="recorridos" name="recorridos" class="form-control" multiple="multiple">
+            </select>
+          </div> -->
+          <div class="container">           
+            <table id="tableRecorridos" class="table">
+              <thead>
+                <tr>
+                  <th>Interno</th>
+                  <th>Fecha</th>
+                  <th>Desde</th>
+                  <th>Hasta</th>
+                  <th>Desde Id</th>
+                  <th>Hasta Id</th>
+                  <th>Latitud</th>
+                  <th>Longiutd</th>
+                  <th>Desde</th>
+                  <th>Hasta</th>
+                  <th>Desde Id</th>
+                  <th>Hasta Id</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="singlebutton"></label>
+          <div class="col-md-4">
+            <!-- <button type="submit" id="singlebutton" name="singlebutton" class="btn btn-primary">Mapear</button> -->
+             <button type="submit" class="btn btn-default">Mapear</button>
+          </div>
+        </div>
+    </fieldset>
+</form>
+
+{{#section 'headScripts'}}
+    
+ 
+
+    // sacado de stackoverflow
+    function agregarRow(data, type) // type indica si es success, warning o error
+    {
+      var offsetMS = new Date().getTimezoneOffset()*60000;
+
+      //var localTime = new Date(Date.parse(data.date) + offsetMS);
+      var localTime = new Date(Date.parse(data.date));
+
+      var row = "<tr data-id='" + data['_id'] + "' class='dataRow " + type + "' >"+
+          '<td>'+data.i+'</td>'+
+          '<td>'+ localTime.toLocaleString() +'</td>'+
+          '<td>'+data.desdeOrdenNomb+'</td>'+
+          '<td>'+data.hastaOrdenNomb+'</td>'+
+          '<td>'+data.desdeOrden+'</td>'+
+          '<td>'+data.hastaOrden+'</td>'+
+          '<td>'+data.lat+'</td>'+
+          '<td>'+data.lon+'</td>'+
+          '<td>'+data.desdeOrdenNombC+'</td>'+
+          '<td>'+data.hastaOrdenNombC+'</td>'+
+          '<td>'+data.desdeOrdenC+'</td>'+
+          '<td>'+data.hastaOrdenC+'</td>'+
+      '</tr>';
+
+      $('#tableRecorridos tbody').append(row);
+    }
+
+    function agregarElementos(data)
+    {
+      var lastIndex = 0;
+      // TODO: puede ser muy lento para muchos elementos, crear y agregar uno por uno.
+      $.each(data, function (i, item) {
+          console.log(item);
+          if (item.repetido){
+            agregarRow(item, "warning");
+          } else if (item.erroneo) {
+            agregarRow(item, "danger");
+          } else
+            agregarRow(item, "");
+        }
+      );
+
+      // marcamos de verde si se clickeo
+      $( ".dataRow" ).on( "click", function() {
+          if ($(this).hasClass('success') == true)
+          {
+            $(this).attr('class', 'dataRow');
+          } else
+          {
+            $(this).attr('class', 'dataRow success');
+          }
+            
+      });
+    }
+
+    //function obtenerSeleccionados()
+    //{
+    //  var options = $('#recorridos option');
+
+     // var values = $.map(options ,function(option) {
+     //     alert(option.value);
+      //});
+    //}
+
+    $(document).ready(function(){
+
+
+        $('#formMandarRecorridos').submit(function(evt){
+                evt.preventDefault();
+
+                var action = $(this).attr('action');
+
+                seleccionados = []
+                $('.success').each( 
+                  function(idx, obj){
+                    seleccionados.push($(obj).attr("data-id"));
+                  }
+                );
+
+                $.post(action, {data : seleccionados},function(data, status){
+                    var w = window.open('about:blank', 'windowname');
+                    w.document.write(data);
+                    w.document.close();
+                });
+        });
+
+
+        $('#formBuscarRecorridos').submit(function(evt){
+
+            var action = $(this).attr('action');
+            var d = $('#formBuscarRecorridos').serialize();
+            //alert(d);
+
+            $.ajax({
+                data : d,
+                dataType : 'json',
+                url: action,
+                type: 'POST',
+                success: function(d){
+                     evt.preventDefault();
+                    if(d.success){
+                      agregarElementos(d.data);
+                    } else {
+                        alert("no success");
+                    }
+                },
+                error: function(){
+                    alert("Error")
+                }
+            });
+
+        evt.preventDefault();
+        });
+    });
+
+{{/section}}
