@@ -5,43 +5,43 @@ var express = require('express')
   , db = require('../../db')
 
 router.post('/buscar', 
-  function(req, res) {
-    var answer = { success: true }
-    Movimiento.all(true, 
-      function(err, movimientos){
-        answer.data = movimientos;
-        res.send(answer);
-      })
+    function(req, res) {
+        var answer = { success: true }
+        if (req.body.selectLinea && req.body.selectRecorrido){
+            Recorrido.getByLineaHacia(Number(req.body.selectLinea), req.body.selectRecorrido.toString(),
+                function(err, recorrido) {
+
+                    Movimiento.allByRecorrido(recorrido.id,
+                        function(err, movimientos){
+                            answer.data = movimientos;
+                            res.send(answer);
+                        })
+                })
+        }
 })
 
 router.post('/mapa', 
   function(req, res) {
-    if (req.body.data && req.body.selectLinea && req.body.selectRecorrido)
+    if (req.body.data)
     {
-        Recorrido.getByLineaHacia(Number(req.body.selectLinea), req.body.selectRecorrido.toString(),
-            function(err, recorrido){
+        var ids = req.body.data;
+        if (ids instanceof Array){
+            ids = ids.map(function(x,i) {
+                return db.driver().Types.ObjectId(x);
+            });
 
-                // Esta transformacion a ObjectId deberia ir en el modelo
-                var ids = req.body.data;
-                if (ids instanceof Array){
-                    ids = ids.map(function(x,i) {
-                        return db.driver().Types.ObjectId(x);
-                    });
+            Movimiento.allById(ids,
+                function(err, movimientos){
+                    var initial =  {lat:movimientos[0].lat, lng:movimientos[0].lon};
 
-                    Movimiento.allByRecorrido(recorrido.id,
-                        function(err, movimientos){
-                            var initial =  {lat:movimientos[0].lat, lng:movimientos[0].lon};
+                    var locs = []
+                    for (var i in movimientos){
+                        locs.push({lat:movimientos[i].lat, lng:movimientos[i].lon});
+                    }
 
-                            var locs = []
-                            for (var i in movimientos){
-                                locs.push({lat:movimientos[i].lat, lng:movimientos[i].lon});
-                            }
-
-                            res.render('maps', { layout: null, initialLoc: initial, locations : locs});
-                        })
-                }
-            })
-
+                    res.render('maps', { layout: null, initialLoc: initial, locations : locs});
+                })
+        }
     }
 })
 

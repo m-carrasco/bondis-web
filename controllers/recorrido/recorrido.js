@@ -11,7 +11,6 @@ router.get('/mapa', function(req, res) {
       var linea = Number(req.query.linea);
       var recorridoId = Number(req.query.recorridoId);
 
-      // Estaria bueno que lineas sea algo ya cacheado en la memoria.
       lineas = {};
       lineas[linea] = {};
       lineas[linea].paradas = {};
